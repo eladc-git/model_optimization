@@ -80,7 +80,14 @@ def nodes_builder(model: GraphModule,
             node_module = module_dict[node.target]
             node_type = type(node_module)
             framework_attr = node_module.__dict__
-            fullargspec = inspect.getfullargspec(node_type.__init__).args
+            # Patch TODO
+            # -----------------------
+            if node_type==torch.nn.modules.LSTM:
+                fullargspec = inspect.getfullargspec(torch.nn.modules.LSTMCell.__init__).args
+                fullargspec.extend(['batch_first', 'dropout', 'bidirectional', 'proj_size'])
+            else:
+                fullargspec = inspect.getfullargspec(node_type.__init__).args
+            # -----------------------
             framework_attr = {k: v for k, v in framework_attr.items() if k in fullargspec}
             if hasattr(node_module, BIAS) and BIAS in fullargspec:
                 framework_attr[BIAS] = False if node_module.bias is None else True
@@ -143,19 +150,27 @@ def nodes_builder(model: GraphModule,
                 if tensor_meta[TYPE] == torch.Tensor:
                     input_shape += [list(tensor_meta[TENSOR_META].shape)]
                 elif tensor_meta[TYPE] == tuple:
-                    input_shape += [list(n.shape) for n in tensor_meta[TENSOR_META]]
+                    for n in tensor_meta[TENSOR_META]:
+                        if type(n) in (list, tuple):
+                            input_shape += [list(n_i.shape) for n_i in n]
+                        else:
+                            input_shape += [list(n.shape)]
                 elif tensor_meta[TYPE] == int:
                     input_shape += [[1]]
 
         # extract output shapes
+        output_shape = []
         if node.meta[TYPE] == torch.Tensor:
-            output_shape = [list(node.meta[TENSOR_META].shape)]
+            output_shape += [list(node.meta[TENSOR_META].shape)]
         elif node.meta[TYPE] in (list, tuple):
-            output_shape = [list(m.shape) for m in node.meta[TENSOR_META]]
+            for m in node.meta[TENSOR_META]:
+                if type(m) in (list, tuple):
+                    output_shape += [list(m_i.shape) for m_i in m]
+                else:
+                    output_shape += [list(m.shape)]
         elif node.meta[TYPE] == int:
-            output_shape = [[1]]
-        else:
-            output_shape = []
+            output_shape += [[1]]
+
 
         # initiate graph nodes
         if node.op in [CALL_METHOD, CALL_FUNCTION]:

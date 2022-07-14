@@ -55,11 +55,10 @@ class GPTQTrainer(ABC):
         # Build two models and create compare nodes
         # ----------------------------------------------
         self.compare_points, _, self.compare_points_mean, self.compare_points_std = get_compare_points(self.graph_float)
-
         self.float_model, self.float_user_info = fw_impl.model_builder(self.graph_float,
                                                                        mode=ModelBuilderMode.FLOAT,
                                                                        append2output=self.compare_points,
-                                                                       fw_info=self.fw_info)
+                                                                         fw_info=self.fw_info)
 
         self.fxp_model, self.gptq_user_info = self.build_gptq_model()
 

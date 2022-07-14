@@ -75,7 +75,13 @@ class MHAParams:
 
         self.qdim = int(self.embed_dim / self.num_heads)
 
-        self.q_input, self.k_input, self.v_input = mha_node.input_shape
+
+        if len(mha_node.input_shape):
+            # Self attention
+            self.q_input, self.k_input, self.v_input = 3*mha_node.input_shape
+        else:
+            # Cross attention
+            self.q_input, self.k_input, self.v_input = mha_node.input_shape
 
         # check for input correctness
         assert self.q_input[0] == self.k_input[0] == self.v_input[0], "Batch size must be equal to all inputs"

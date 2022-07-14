@@ -65,6 +65,13 @@ from model_compression_toolkit.core.pytorch.reader.reader import model_reader
 from model_compression_toolkit.core.pytorch.utils import to_torch_tensor, torch_tensor_to_numpy
 from model_compression_toolkit.gptq.common.gptq_training import GPTQTrainer
 
+from model_compression_toolkit.core.pytorch.graph_substitutions.substitutions.softmax_shift import \
+    pytorch_softmax_shift
+from model_compression_toolkit.core.pytorch.graph_substitutions.substitutions.multi_head_attention_decomposition \
+    import MultiHeadAttentionDecomposition
+from model_compression_toolkit.core.pytorch.graph_substitutions.substitutions.permute_call_method import PermuteCallMethod
+from model_compression_toolkit.core.pytorch.graph_substitutions.substitutions.constant_holder_conv import ConstantHolderConv
+from model_compression_toolkit.gptq.pytorch.gptq_training import PytorchGPTQTrainer
 
 class PytorchImplementation(FrameworkImplementation):
     """
@@ -217,7 +224,8 @@ class PytorchImplementation(FrameworkImplementation):
         """
         return [ReshapeWithStaticShapes(),
                 MultiHeadAttentionDecomposition(),
-                PermuteCallMethod()]
+                PermuteCallMethod(),
+                ConstantHolderConv()]
 
     def get_substitutions_pre_statistics_collection(self,
                                                     quant_config: QuantizationConfig
@@ -272,7 +280,7 @@ class PytorchImplementation(FrameworkImplementation):
         """
         Returns: GPTQTrainer object
         """
-        raise Exception('This feature is currently not yet available for Pytorch models. Work in progress.')
+        return PytorchGPTQTrainer
 
     def get_sensitivity_evaluator(self,
                                   graph: Graph,

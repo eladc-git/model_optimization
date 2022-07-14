@@ -15,7 +15,7 @@
 
 from abc import abstractmethod
 from typing import Tuple, Any, Dict, List
-
+import operator
 import torch
 from networkx import topological_sort
 
@@ -56,8 +56,9 @@ def _build_input_tensors_list(node: BaseNode,
         # Append them in a result list.
         for ie in graph.incoming_edges(node, sort_by_attr=EDGE_SINK_INDEX):
             _input_tensors = node_to_output_tensors_dict[ie.source_node]
-            input_tensors.append(_input_tensors)
-        input_tensors = [tensor for tensor_list in input_tensors for tensor in tensor_list]  # flat list of lists
+            input_tensors.extend(_input_tensors)
+        if node.type == operator.getitem and isinstance(input_tensors[0], torch.Tensor):
+            input_tensors = [input_tensors]
     return input_tensors
 
 
